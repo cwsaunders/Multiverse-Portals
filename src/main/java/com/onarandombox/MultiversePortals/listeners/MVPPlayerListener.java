@@ -244,7 +244,7 @@ public class MVPPlayerListener implements Listener {
                     event.setCancelled(true);
                     return;
                 }
-                MVPTravelAgent agent = new MVPTravelAgent(this.plugin.getCore(), portalDest, event.getPlayer());
+
                 event.setTo(portalDest.getLocation(event.getPlayer()));
                 if (portalDest.useSafeTeleporter()) {
                     SafeTTeleporter teleporter = this.plugin.getCore().getSafeTTeleporter();
@@ -267,8 +267,7 @@ public class MVPPlayerListener implements Listener {
                     }
                 }
 
-                agent.setPortalEventTravelAgent(event);
-                MVPortalEvent portalEvent = new MVPortalEvent(portalDest, event.getPlayer(), agent, portal);
+                MVPortalEvent portalEvent = new MVPortalEvent(portalDest, event.getPlayer(), portal);
                 this.plugin.getServer().getPluginManager().callEvent(portalEvent);
 
                 if (portalEvent.isCancelled()) {
