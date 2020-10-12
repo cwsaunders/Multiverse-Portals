@@ -308,7 +308,7 @@ public class MVPortal {
             throw new IllegalStateException();
         }
 
-        return new Vector().copy(this.location.getMinimum()).add(this.location.getMaximum()).multiply(0.5)
+        return this.location.getMinimum().getMidpoint(this.location.getMaximum())
                 .toLocation(this.location.getMVWorld().getCBWorld()).getBlock().getType();
     }
 
