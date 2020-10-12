@@ -303,6 +303,19 @@ public class MVPortal {
         return this.location;
     }
 
+    public Material getFillMaterial() throws IllegalStateException {
+        if (!this.location.isValidLocation()) {
+            throw new IllegalStateException();
+        }
+
+        return new Vector().copy(this.location.getMinimum()).add(this.location.getMaximum()).multiply(0.5)
+                .toLocation(this.location.getMVWorld().getCBWorld()).getBlock().getType();
+    }
+
+    public boolean isLegacyPortal() throws IllegalStateException {
+        return this.getFillMaterial() != Material.NETHER_PORTAL;
+    }
+
     public boolean playerCanEnterPortal(Player player) {
         return (this.plugin.getCore().getMVPerms().hasPermission(player, this.permission.getName(), true));
     }
