@@ -215,19 +215,27 @@ public class MVPPlayerListener implements Listener {
             this.plugin.log(Level.FINER, "There was a portal found!");
             MVDestination portalDest = portal.getDestination();
             if (portalDest != null && !(portalDest instanceof InvalidDestination)) {
+                // this is a valid MV Portal, so we'll cancel the event
+                event.setCancelled(true);
+
                 if (!portal.isFrameValid(playerPortalLoc)) {
                     event.getPlayer().sendMessage("This portal's frame is made of an " + ChatColor.RED + "incorrect material." + ChatColor.RED + " You should exit it now.");
-                    event.setCancelled(true);
                     return;
                 }
+
+                event.setTo(portalDest.getLocation(event.getPlayer()));
+                if (portalDest.useSafeTeleporter()) {
+                    SafeTTeleporter teleporter = this.plugin.getCore().getSafeTTeleporter();
+                    event.setTo(teleporter.getSafeLocation(event.getPlayer(), portalDest));
+                }
+
                 PortalPlayerSession ps = this.plugin.getPortalSession(event.getPlayer());
                 if (portal.getHandlerScript() != null && !portal.getHandlerScript().isEmpty()) {
                     try {
                         if (helper.scriptPortal(event.getPlayer(), portalDest, portal, ps)) {
-                            // Portal handled by script
-                        } else {
-                            event.setCancelled(true);
+                            event.getPlayer().teleport(event.getTo());
                         }
+
                         return;
                     } catch (IllegalStateException ignore) {
                         // Portal not handled by script
@@ -235,22 +243,16 @@ public class MVPPlayerListener implements Listener {
                 }
                 if (!ps.allowTeleportViaCooldown(new Date())) {
                     event.getPlayer().sendMessage(ps.getFriendlyRemainingTimeMessage());
-                    event.setCancelled(true);
                     return;
                 }
                 // If they're using Access and they don't have permission and they're NOT exempt, return, they're not allowed to tp.
                 // No longer checking exemption status
                 if (MultiversePortals.EnforcePortalAccess && !this.plugin.getCore().getMVPerms().hasPermission(event.getPlayer(), portal.getPermission().getName(), true)) {
                     this.helper.stateFailure(p.getDisplayName(), portal.getName());
-                    event.setCancelled(true);
                     return;
                 }
+
                 MVPTravelAgent agent = new MVPTravelAgent(this.plugin.getCore(), portalDest, event.getPlayer());
-                event.setTo(portalDest.getLocation(event.getPlayer()));
-                if (portalDest.useSafeTeleporter()) {
-                    SafeTTeleporter teleporter = this.plugin.getCore().getSafeTTeleporter();
-                    event.setTo(teleporter.getSafeLocation(event.getPlayer(), portalDest));
-                }
 
                 boolean shouldPay = false;
                 double price = portal.getPrice();
@@ -263,7 +265,6 @@ public class MVPPlayerListener implements Listener {
                     if (price > 0D && !economist.isPlayerWealthyEnough(p, price, currency)) {
                         p.sendMessage(economist.getNSFMessage(currency,
                                 "You need " + economist.formatPrice(price, currency) + " to enter the " + portal.getName() + " portal."));
-                        event.setCancelled(true);
                         return;
                     }
                 }
@@ -273,7 +274,6 @@ public class MVPPlayerListener implements Listener {
                 this.plugin.getServer().getPluginManager().callEvent(portalEvent);
 
                 if (portalEvent.isCancelled()) {
-                    event.setCancelled(true);
                     this.plugin.log(Level.FINE, "Someone cancelled the MVPlayerPortal Event!");
                     return;
                 } else if (shouldPay) {
@@ -287,7 +287,8 @@ public class MVPPlayerListener implements Listener {
                             economist.formatPrice(price, currency),
                             portal.getName()));
                 }
-                this.plugin.log(Level.FINE, "Sending player to a location via our Sexy Travel Agent!");
+
+                event.getPlayer().teleport(event.getTo());
             } else if (!this.plugin.getMainConfig().getBoolean("portalsdefaulttonether", false)) {
                 // If portals should not default to the nether, cancel the event
                 event.getPlayer().sendMessage(String.format(
